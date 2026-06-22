@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Sanal ortamlar
+.venv/
+venv/
+env/
+ENV/
+
+# Test / kapsam
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# IDE / editör
+.vscode/
+.idea/
+*.swp
+*~
+
+# İşletim sistemi
+.DS_Store
+Thumbs.db
