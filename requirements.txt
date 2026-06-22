@@ -1,0 +1,5 @@
+# organize.py çalışmak için ek bir bağımlılığa ihtiyaç duymaz
+# (yalnızca Python standart kütüphanesi kullanılır).
+#
+# Aşağıdaki paketler yalnızca testleri çalıştırmak içindir:
+pytest>=7.0

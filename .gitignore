@@ -30,3 +30,6 @@ htmlcov/
 # İşletim sistemi
 .DS_Store
 Thumbs.db
+
+# organize.py geri alma (undo) log dosyası
+.organize_log.json
