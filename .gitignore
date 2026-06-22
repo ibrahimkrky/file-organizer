@@ -33,3 +33,4 @@ Thumbs.db
 
 # organize.py geri alma (undo) log dosyası
 .organize_log.json
+CLAUDE.md
