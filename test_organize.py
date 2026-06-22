@@ -12,7 +12,9 @@ import organize
 from organize import (
     DIGER,
     LOG_DOSYASI,
+    boyut_bicimle,
     geri_al,
+    istatistik_topla,
     kategori_bul,
     klasor_organize_et,
 )
@@ -147,6 +149,64 @@ def test_geri_al_dosyalari_eski_yerine_koyar(tmp_path):
 def test_geri_al_log_yoksa_hata_doner(tmp_path):
     sonuc = geri_al(tmp_path)
     assert sonuc == 1
+
+
+# --- istatistik (stats) --------------------------------------------------
+
+@pytest.mark.parametrize(
+    "bayt, beklenen",
+    [
+        (0, "0 B"),
+        (512, "512 B"),
+        (1024, "1.0 KB"),
+        (1536, "1.5 KB"),
+        (1024 * 1024, "1.0 MB"),
+        (1024 ** 3, "1.0 GB"),
+    ],
+)
+def test_boyut_bicimle(bayt, beklenen):
+    assert boyut_bicimle(bayt) == beklenen
+
+
+def test_istatistik_topla_kategori_ve_boyut(tmp_path):
+    _dosya_olustur(tmp_path, "a.jpg", icerik="x" * 10)
+    _dosya_olustur(tmp_path, "b.png", icerik="y" * 20)
+    _dosya_olustur(tmp_path, "c.pdf", icerik="z" * 5)
+    _dosya_olustur(tmp_path, "d.xyz", icerik="w" * 3)
+
+    istatistik = istatistik_topla(tmp_path)
+
+    assert istatistik["Images"] == {"adet": 2, "boyut": 30}
+    assert istatistik["Documents"] == {"adet": 1, "boyut": 5}
+    assert istatistik[DIGER] == {"adet": 1, "boyut": 3}
+
+
+def test_istatistik_topla_dosya_tasimaz(tmp_path):
+    _dosya_olustur(tmp_path, "a.jpg")
+
+    istatistik_topla(tmp_path)
+
+    # Rapor üretmek dosyaları yerinden oynatmamalı
+    assert (tmp_path / "a.jpg").is_file()
+    assert not (tmp_path / "Images").exists()
+
+
+def test_istatistik_topla_log_ve_alt_klasorleri_yoksayar(tmp_path):
+    _dosya_olustur(tmp_path, LOG_DOSYASI, icerik="[]")
+    alt = tmp_path / "alt"
+    alt.mkdir()
+    _dosya_olustur(alt, "gizli.jpg")
+    _dosya_olustur(tmp_path, "a.jpg")
+
+    istatistik = istatistik_topla(tmp_path)
+
+    # Yalnızca doğrudan içerideki a.jpg sayılmalı; log ve alt klasör hariç
+    assert istatistik["Images"]["adet"] == 1
+    assert len(istatistik) == 1
+
+
+def test_istatistik_topla_bos_klasor(tmp_path):
+    assert istatistik_topla(tmp_path) == {}
 
 
 def test_organize_ve_geri_al_dongusu(tmp_path):
