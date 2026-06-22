@@ -31,6 +31,9 @@ python organize.py /yol/klasor --dry-run
 
 # Son düzenlemeyi geri al
 python organize.py /yol/klasor --undo
+
+# Taşımadan istatistik raporu (kategori başına adet ve toplam boyut)
+python organize.py /yol/klasor --stats
 ```
 
 `~` kısayolu desteklenir:
@@ -42,6 +45,7 @@ python organize.py ~/İndirilenler --dry-run
 ## Özellikler
 
 - **`--dry-run`**: Gerçekten taşımadan hangi dosyanın nereye gideceğini gösterir.
+- **`--stats`**: Hiçbir şey taşımadan, her kategoride kaç dosya olduğunu ve toplam boyutu özet bir tablo halinde gösterir.
 - **`--undo`**: Son düzenlemeyi geri alır. Her düzenlemede yapılan taşımalar hedef
   klasördeki `.organize_log.json` dosyasına kaydedilir; `--undo` bu kaydı okuyarak
   dosyaları eski yerlerine taşır ve boşalan kategori klasörlerini temizler.

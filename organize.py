@@ -165,6 +165,67 @@ def benzersiz_isim(klasor: Path, isim: str) -> Path:
         sayac += 1
 
 
+def boyut_bicimle(bayt: int) -> str:
+    """Bayt cinsinden boyutu okunabilir bir metne çevirir (ör. 1.5 MB)."""
+    boyut = float(bayt)
+    for birim in ("B", "KB", "MB", "GB", "TB"):
+        if boyut < 1024 or birim == "TB":
+            # Bayt için ondalık gösterme, diğerleri için bir basamak
+            if birim == "B":
+                return f"{int(boyut)} {birim}"
+            return f"{boyut:.1f} {birim}"
+        boyut /= 1024
+    return f"{boyut:.1f} TB"
+
+
+def istatistik_topla(hedef: Path) -> dict[str, dict[str, int]]:
+    """Hedef klasördeki dosyaları kategoriye göre sayar ve boyutlarını toplar.
+
+    Dönüş: kategori -> {"adet": dosya sayısı, "boyut": toplam bayt}.
+    Yalnızca klasörün doğrudan içindeki dosyalar sayılır; alt klasörlere ve
+    aracın kendi log dosyasına dokunulmaz.
+    """
+    istatistik: dict[str, dict[str, int]] = {}
+
+    for oge in hedef.iterdir():
+        if not oge.is_file() or oge.name == LOG_DOSYASI:
+            continue
+
+        kategori = kategori_bul(oge.suffix)
+        kayit = istatistik.setdefault(kategori, {"adet": 0, "boyut": 0})
+        kayit["adet"] += 1
+        kayit["boyut"] += oge.stat().st_size
+
+    return istatistik
+
+
+def istatistik_goster(hedef: Path) -> None:
+    """Hedef klasör için kategori bazlı dosya sayısı ve boyut raporu yazdırır."""
+    istatistik = istatistik_topla(hedef)
+
+    if not istatistik:
+        print("Bu klasörde düzenlenecek dosya bulunamadı.")
+        return
+
+    # Kategori adlarını sabit sırada (tanımlı kategoriler + Others) göster
+    sirali = [k for k in (*KATEGORILER.keys(), DIGER) if k in istatistik]
+
+    print(f"{'Kategori':<12} {'Adet':>6} {'Boyut':>12}")
+    print(f"{'-' * 12} {'-' * 6} {'-' * 12}")
+
+    toplam_adet = 0
+    toplam_boyut = 0
+    for kategori in sirali:
+        adet = istatistik[kategori]["adet"]
+        boyut = istatistik[kategori]["boyut"]
+        toplam_adet += adet
+        toplam_boyut += boyut
+        print(f"{kategori:<12} {adet:>6} {boyut_bicimle(boyut):>12}")
+
+    print(f"{'-' * 12} {'-' * 6} {'-' * 12}")
+    print(f"{'TOPLAM':<12} {toplam_adet:>6} {boyut_bicimle(toplam_boyut):>12}")
+
+
 def main() -> int:
     ayrıştırıcı = argparse.ArgumentParser(
         description="Bir klasördeki dosyaları uzantılarına göre alt klasörlere düzenler.",
@@ -184,10 +245,16 @@ def main() -> int:
         action="store_true",
         help="Son düzenlemeyi geri alır (kayıt log dosyasından okunur).",
     )
+    ayrıştırıcı.add_argument(
+        "--stats",
+        action="store_true",
+        help="Dosyaları taşımadan, kategori bazlı dosya sayısı ve toplam boyut raporu gösterir.",
+    )
     argümanlar = ayrıştırıcı.parse_args()
 
-    if argümanlar.dry_run and argümanlar.undo:
-        print("Hata: --dry-run ve --undo birlikte kullanılamaz.", file=sys.stderr)
+    secili_kipler = sum([argümanlar.dry_run, argümanlar.undo, argümanlar.stats])
+    if secili_kipler > 1:
+        print("Hata: --dry-run, --undo ve --stats aynı anda kullanılamaz.", file=sys.stderr)
         return 1
 
     hedef = Path(argümanlar.klasor).expanduser().resolve()
@@ -198,6 +265,11 @@ def main() -> int:
     if not hedef.is_dir():
         print(f"Hata: '{hedef}' bir klasör değil.", file=sys.stderr)
         return 1
+
+    if argümanlar.stats:
+        print(f"'{hedef}' klasörü için istatistik raporu:\n")
+        istatistik_goster(hedef)
+        return 0
 
     if argümanlar.undo:
         print(f"'{hedef}' klasörü için son düzenleme geri alınıyor...\n")
